@@ -12,6 +12,33 @@ from .errors import PayloadSchemaError, UnregisteredEventTypeError
 from .json_types import JsonObject, JsonValue, freeze_object
 
 _OBJECT_SCHEMA = '{"additionalProperties":true,"type":"object"}'
+_APPROVAL_REQUESTED_SCHEMA = (
+    '{"additionalProperties":true,"properties":{'
+    '"args_hash":{"pattern":"^[0-9a-f]{64}$","type":"string"},'
+    '"bundle_id":{"pattern":"^[0-7][0123456789ABCDEFGHJKMNPQRSTVWXYZ]{25}$","type":"string"},'
+    '"expires_at":{"pattern":"Z$","type":"string"},'
+    '"policy_version":{"type":"integer"},'
+    '"request_id":{"pattern":"^[0-7][0123456789ABCDEFGHJKMNPQRSTVWXYZ]{25}$","type":"string"},'
+    '"tool":{"type":"string"}},'
+    '"required":["request_id","bundle_id","policy_version","tool","args_hash","expires_at"],'
+    '"type":"object"}'
+)
+_APPROVAL_TERMINAL_SCHEMA = (
+    '{"additionalProperties":true,"properties":{'
+    '"request_id":{"pattern":"^[0-7][0123456789ABCDEFGHJKMNPQRSTVWXYZ]{25}$","type":"string"}},'
+    '"required":["request_id"],"type":"object"}'
+)
+_POLICY_CHALLENGED_SCHEMA = (
+    '{"additionalProperties":true,"properties":{'
+    '"bundle_id":{"pattern":"^[0-7][0123456789ABCDEFGHJKMNPQRSTVWXYZ]{25}$","type":"string"},'
+    '"decision_id":{"pattern":"^[0-7][0123456789ABCDEFGHJKMNPQRSTVWXYZ]{25}$",'
+    '"type":"string"},'
+    '"policy_version":{"type":"integer"},'
+    '"reasoning":{"type":"string"},'
+    '"rule_id":{"type":"string"}},'
+    '"required":["decision_id","reasoning","bundle_id","policy_version","rule_id"],'
+    '"type":"object"}'
+)
 
 _EVENT_TYPES: Final[tuple[str, ...]] = (
     "session.started",
@@ -67,8 +94,23 @@ class EventSchema:
     schema_json: str
 
 
+def _schema_for(event_type: str) -> str:
+    if event_type == "approval.requested":
+        return _APPROVAL_REQUESTED_SCHEMA
+    if event_type in {
+        "approval.granted",
+        "approval.denied",
+        "approval.expired",
+        "approval.invalidated",
+    }:
+        return _APPROVAL_TERMINAL_SCHEMA
+    if event_type == "policy.challenged":
+        return _POLICY_CHALLENGED_SCHEMA
+    return _OBJECT_SCHEMA
+
+
 EVENT_SCHEMAS: Final[tuple[EventSchema, ...]] = tuple(
-    EventSchema(event_type, 1, _OBJECT_SCHEMA) for event_type in _EVENT_TYPES
+    EventSchema(event_type, 1, _schema_for(event_type)) for event_type in _EVENT_TYPES
 )
 
 
