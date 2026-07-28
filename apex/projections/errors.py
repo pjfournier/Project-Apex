@@ -19,4 +19,3 @@ class ProjectionStateCorruptionError(ProjectionError):
 
 class UnknownProjectionError(ProjectionError):
     """A requested projection name is not registered."""
-

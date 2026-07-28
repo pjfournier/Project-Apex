@@ -43,10 +43,7 @@ def test_golden_projection_replay_matches_reviewed_snapshots(tmp_path: Path) -> 
         service = ProjectionService(journal)
         service.rebuild_all()
         actual = {
-            name: json.loads(
-                _required_snapshot_json(journal, name)
-            )
-            for name in service.names
+            name: json.loads(_required_snapshot_json(journal, name)) for name in service.names
         }
 
     assert actual == expected
@@ -56,4 +53,3 @@ def _required_snapshot_json(journal: JournalStore, name: str) -> str:
     snapshot = journal.load_projection_snapshot(name)
     assert snapshot is not None
     return snapshot.state_json
-

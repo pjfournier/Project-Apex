@@ -62,13 +62,9 @@ def test_acceptance_6_rebuilds_are_byte_identical(tmp_path: Path) -> None:
         service = ProjectionService(journal)
 
         first_reports = service.rebuild_all()
-        first_snapshots = tuple(
-            journal.load_projection_snapshot(name) for name in service.names
-        )
+        first_snapshots = tuple(journal.load_projection_snapshot(name) for name in service.names)
         second_reports = service.rebuild_all()
-        second_snapshots = tuple(
-            journal.load_projection_snapshot(name) for name in service.names
-        )
+        second_snapshots = tuple(journal.load_projection_snapshot(name) for name in service.names)
 
     assert first_reports == second_reports
     assert first_snapshots == second_snapshots
@@ -108,9 +104,7 @@ def test_catch_up_processes_only_new_events_and_is_idempotent(tmp_path: Path) ->
 
 def test_interrupted_catch_up_preserves_previous_checkpoint(tmp_path: Path) -> None:
     class InterruptedProjection(PendingApprovalsProjection):
-        def fold(
-            self, state: PendingApprovalsState, event: Event
-        ) -> PendingApprovalsState:
+        def fold(self, state: PendingApprovalsState, event: Event) -> PendingApprovalsState:
             if event.seq == 2:
                 raise RuntimeError("simulated interruption")
             return super().fold(state, event)
@@ -162,9 +156,7 @@ def test_online_rebuild_can_lag_and_then_catch_up(tmp_path: Path) -> None:
             self._reading = reading
             self._resume = resume
 
-        def fold(
-            self, state: PendingApprovalsState, event: Event
-        ) -> PendingApprovalsState:
+        def fold(self, state: PendingApprovalsState, event: Event) -> PendingApprovalsState:
             if event.seq == 1:
                 self._reading.set()
                 assert self._resume.wait(timeout=5)

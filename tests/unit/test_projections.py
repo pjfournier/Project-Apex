@@ -196,4 +196,3 @@ def test_projection_codec_rejects_unsorted_duplicate_state() -> None:
 
     with pytest.raises(ProjectionStateCorruptionError, match="uniquely sorted"):
         projection.decode(corrupted)
-

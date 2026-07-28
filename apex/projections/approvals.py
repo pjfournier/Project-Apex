@@ -65,9 +65,7 @@ class PendingApprovalsProjection:
         if event.type == "approval.requested":
             approval = _approval_from_event(event)
             if approval.request_id in pending:
-                raise ProjectionInputError(
-                    f"duplicate approval request {approval.request_id!r}"
-                )
+                raise ProjectionInputError(f"duplicate approval request {approval.request_id!r}")
             pending[approval.request_id] = approval
         elif event.type in _TERMINAL_TYPES:
             request_id = event_str(event.payload, "request_id")

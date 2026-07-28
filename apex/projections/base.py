@@ -136,7 +136,5 @@ def should_apply(last_applied_seq: int, event: Event) -> bool:
         return False
     expected = last_applied_seq + 1
     if event.seq != expected:
-        raise ProjectionSequenceError(
-            f"expected Journal seq {expected}, received {event.seq}"
-        )
+        raise ProjectionSequenceError(f"expected Journal seq {expected}, received {event.seq}")
     return True

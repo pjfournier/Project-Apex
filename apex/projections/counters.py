@@ -116,8 +116,5 @@ def _counter_from_state(state: JsonObject) -> ChallengeCount:
     if not is_ulid(key.bundle_id):
         raise ProjectionStateCorruptionError("challenge state bundle_id must be a ULID")
     if key.policy_version < 1 or count < 1:
-        raise ProjectionStateCorruptionError(
-            "challenge state version and count must be positive"
-        )
+        raise ProjectionStateCorruptionError("challenge state version and count must be positive")
     return ChallengeCount(key, count)
-
