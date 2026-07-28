@@ -1,0 +1,32 @@
+# CODEOWNERS
+#
+# Mechanical review gate on the paths where architectural erosion is fatal and
+# a checklist alone is insufficient.
+
+# Default: no forced review
+*
+
+# Decision layer — purity and authority
+/apex/policy/                   @pjfournier
+/apex/enforcement/              @pjfournier
+/apex/adapters/tools/           @pjfournier
+
+# Foundations — impurity here contaminates everything downstream
+/apex/journal/                  @pjfournier
+/apex/ports.py                  @pjfournier
+
+# Identity — behavior-defining artifacts, not code
+/apex/identity/                 @pjfournier
+/tests/continuity/              @pjfournier
+/fixtures/scenarios/            @pjfournier
+
+# The controls themselves
+/tests/architecture/            @pjfournier
+/Makefile                       @pjfournier
+/.github/                       @pjfournier
+
+# Governance documents
+/specs/                         @pjfournier
+/AMENDMENTS.md                  @pjfournier
+/AGENTS.md                      @pjfournier
+/SECURITY.md                    @pjfournier
