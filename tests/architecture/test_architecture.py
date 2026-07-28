@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 import pytest
@@ -33,3 +34,21 @@ def test_project_tree_obeys_architecture() -> None:
 def test_negative_fixture_is_rejected(fixture: str, expected_rule: str) -> None:
     violations = check_file(FIXTURES / fixture, FIXTURES)
     assert expected_rule in {item.rule for item in violations}
+
+
+def test_journal_store_issues_no_update_or_delete_statement() -> None:
+    tree = ast.parse((ROOT / "apex" / "journal" / "store.py").read_text(encoding="utf-8"))
+    forbidden: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr != "execute" or not node.args:
+            continue
+        statement = node.args[0]
+        if not isinstance(statement, ast.Constant) or not isinstance(statement.value, str):
+            continue
+        normalized = statement.value.lstrip().upper()
+        if normalized.startswith(("UPDATE ", "DELETE ")):
+            forbidden.append((statement.lineno, normalized.split(maxsplit=1)[0]))
+
+    assert forbidden == []
