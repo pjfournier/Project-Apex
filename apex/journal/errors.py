@@ -27,3 +27,7 @@ class EventNotFoundError(JournalError):
 
 class StoredEventCorruptionError(JournalError):
     """A stored row cannot be decoded as a valid event."""
+
+
+class ProjectionSnapshotCorruptionError(JournalError):
+    """A persisted projection snapshot fails structural or hash validation."""

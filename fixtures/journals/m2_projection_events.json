@@ -1,0 +1,62 @@
+[
+  {
+    "actor": "system",
+    "payload": {
+      "operation": "fixture-start"
+    },
+    "type": "admin.action"
+  },
+  {
+    "actor": "system",
+    "payload": {
+      "args_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bundle_id": "01KDVDNA000000000000000020",
+      "expires_at": "2026-01-02T00:00:00Z",
+      "policy_version": 1,
+      "request_id": "01KDVDNA000000000000000010",
+      "tool": "fs.write_file"
+    },
+    "type": "approval.requested"
+  },
+  {
+    "actor": "system",
+    "payload": {
+      "args_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "bundle_id": "01KDVDNA000000000000000020",
+      "expires_at": "2026-01-03T00:00:00Z",
+      "policy_version": 1,
+      "request_id": "01KDVDNA000000000000000011",
+      "tool": "fs.delete_file"
+    },
+    "type": "approval.requested"
+  },
+  {
+    "actor": "apex",
+    "payload": {
+      "bundle_id": "01KDVDNA000000000000000020",
+      "decision_id": "01KDVDNA000000000000000030",
+      "policy_version": 1,
+      "reasoning": "The request is necessary.",
+      "rule_id": "r-write"
+    },
+    "type": "policy.challenged"
+  },
+  {
+    "actor": "apex",
+    "payload": {
+      "bundle_id": "01KDVDNA000000000000000020",
+      "decision_id": "01KDVDNA000000000000000031",
+      "policy_version": 1,
+      "reasoning": "The request remains necessary.",
+      "rule_id": "r-write"
+    },
+    "type": "policy.challenged"
+  },
+  {
+    "actor": "user",
+    "payload": {
+      "request_id": "01KDVDNA000000000000000010"
+    },
+    "type": "approval.granted"
+  }
+]

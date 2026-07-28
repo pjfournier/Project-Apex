@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 import sqlite3
 from collections.abc import Iterator, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import UTC
 from pathlib import Path
 from typing import Literal, Protocol
@@ -14,6 +17,7 @@ from apex.ports import Clock
 from .chain import (
     GENESIS_HASH,
     ChainReport,
+    canonical_json,
     compute_event_hash,
     payload_json,
     recompute_event_hash,
@@ -23,6 +27,7 @@ from .errors import (
     InvalidEnvelopeError,
     JournalError,
     JournalWriteError,
+    ProjectionSnapshotCorruptionError,
     StoredEventCorruptionError,
 )
 from .events import Event
@@ -31,6 +36,18 @@ from .registry import registered_schema, validate_payload
 from .ulid import new_monotonic_ulid
 
 AppendStage = Literal["transaction_started", "row_inserted"]
+_PROJECTION_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
+
+
+@dataclass(frozen=True)
+class ProjectionSnapshot:
+    """An opaque, hash-verified projection checkpoint."""
+
+    name: str
+    last_applied_seq: int
+    state: JsonObject
+    state_json: str
+    state_hash: str
 
 
 class AppendObserver(Protocol):
@@ -195,12 +212,88 @@ class JournalStore:
             WHERE {" AND ".join(clauses)}
             ORDER BY seq ASC
         """
+        cursor: sqlite3.Cursor | None = None
         try:
-            rows = self._connection.execute(query, parameters).fetchall()
+            cursor = self._connection.execute(query, parameters)
+            while row := cursor.fetchone():
+                yield self._row_to_event(row)
         except sqlite3.Error as error:
             raise StoredEventCorruptionError("failed to read Journal range") from error
-        events = tuple(self._row_to_event(row) for row in rows)
-        return iter(events)
+        finally:
+            if cursor is not None:
+                cursor.close()
+
+    def load_projection_snapshot(self, name: str) -> ProjectionSnapshot | None:
+        """Load and verify an opaque projection checkpoint."""
+        _validate_projection_name(name)
+        try:
+            row = self._connection.execute(
+                """
+                SELECT name, last_applied_seq, state, state_hash
+                FROM projection_snapshots
+                WHERE name = ?
+                """,
+                (name,),
+            ).fetchone()
+        except sqlite3.Error as error:
+            raise ProjectionSnapshotCorruptionError(
+                f"failed to read projection snapshot {name!r}"
+            ) from error
+        if row is None:
+            return None
+        try:
+            snapshot_name = _required_str(row[0], "name")
+            last_applied_seq = _required_int(row[1], "last_applied_seq")
+            state_json = _required_str(row[2], "state")
+            state_hash = _required_str(row[3], "state_hash")
+            raw_state: object = json.loads(state_json)
+            state = freeze_object(raw_state)
+        except (IndexError, TypeError, ValueError, JournalError) as error:
+            raise ProjectionSnapshotCorruptionError(
+                f"projection snapshot {name!r} is invalid"
+            ) from error
+        expected_json = canonical_json(state).decode("utf-8")
+        expected_hash = hashlib.sha256(expected_json.encode("utf-8")).hexdigest()
+        if state_json != expected_json or state_hash != expected_hash:
+            raise ProjectionSnapshotCorruptionError(
+                f"projection snapshot {name!r} failed canonical hash validation"
+            )
+        return ProjectionSnapshot(
+            name=snapshot_name,
+            last_applied_seq=last_applied_seq,
+            state=state,
+            state_json=state_json,
+            state_hash=state_hash,
+        )
+
+    def replace_projection_snapshot(
+        self,
+        name: str,
+        last_applied_seq: int,
+        state: JsonObject,
+    ) -> ProjectionSnapshot:
+        """Atomically replace one derived projection checkpoint."""
+        _validate_projection_name(name)
+        if last_applied_seq < 0:
+            raise InvalidEnvelopeError("last_applied_seq must be nonnegative")
+        frozen_state = freeze_object(state)
+        state_json = canonical_json(frozen_state).decode("utf-8")
+        state_hash = hashlib.sha256(state_json.encode("utf-8")).hexdigest()
+        try:
+            self._connection.execute("BEGIN IMMEDIATE")
+            self._connection.execute(
+                """
+                INSERT OR REPLACE INTO projection_snapshots (
+                    name, last_applied_seq, state, state_hash
+                ) VALUES (?, ?, ?, ?)
+                """,
+                (name, last_applied_seq, state_json, state_hash),
+            )
+            self._connection.execute("COMMIT")
+        except sqlite3.Error as error:
+            self._rollback()
+            raise JournalWriteError(f"failed to persist projection snapshot {name!r}") from error
+        return ProjectionSnapshot(name, last_applied_seq, frozen_state, state_json, state_hash)
 
     def head(self) -> tuple[int, str]:
         """Return the current sequence and head hash."""
@@ -292,6 +385,13 @@ class JournalStore:
             BEGIN
                 SELECT RAISE(ABORT, 'events are append-only');
             END;
+
+            CREATE TABLE IF NOT EXISTS projection_snapshots (
+                name TEXT NOT NULL PRIMARY KEY,
+                last_applied_seq INTEGER NOT NULL CHECK (last_applied_seq >= 0),
+                state TEXT NOT NULL,
+                state_hash TEXT NOT NULL
+            ) STRICT;
             """
         )
 
@@ -384,3 +484,8 @@ def _required_int(value: object, field: str) -> int:
     if not isinstance(value, int):
         raise StoredEventCorruptionError(f"{field} is not an integer")
     return value
+
+
+def _validate_projection_name(name: str) -> None:
+    if _PROJECTION_NAME.fullmatch(name) is None:
+        raise InvalidEnvelopeError(f"invalid projection name {name!r}")

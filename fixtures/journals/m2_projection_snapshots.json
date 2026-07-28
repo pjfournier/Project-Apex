@@ -1,0 +1,29 @@
+{
+  "challenge_counters": {
+    "counters": [
+      {
+        "bundle_id": "01KDVDNA000000000000000020",
+        "count": 2,
+        "policy_version": 1,
+        "rule_id": "r-write"
+      }
+    ],
+    "last_applied_seq": 6
+  },
+  "pending_approvals": {
+    "last_applied_seq": 6,
+    "pending": [
+      {
+        "args_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "bundle_id": "01KDVDNA000000000000000020",
+        "expires_at": "2026-01-03T00:00:00Z",
+        "policy_version": 1,
+        "request_id": "01KDVDNA000000000000000011",
+        "requested_at": "2026-01-01T00:00:00.000002Z",
+        "requested_event_id": "01KDVDNA000000000000000003",
+        "requested_seq": 3,
+        "tool": "fs.delete_file"
+      }
+    ]
+  }
+}

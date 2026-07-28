@@ -7,12 +7,14 @@ from .errors import (
     JournalError,
     JournalWriteError,
     PayloadSchemaError,
+    ProjectionSnapshotCorruptionError,
     StoredEventCorruptionError,
     UnregisteredEventTypeError,
 )
 from .events import Event
-from .json_types import JsonObject, JsonValue
-from .store import AppendObserver, AppendStage, JournalStore
+from .json_types import JsonObject, JsonValue, freeze_object
+from .store import AppendObserver, AppendStage, JournalStore, ProjectionSnapshot
+from .ulid import is_ulid
 
 __all__ = (
     "GENESIS_HASH",
@@ -28,6 +30,10 @@ __all__ = (
     "JsonObject",
     "JsonValue",
     "PayloadSchemaError",
+    "ProjectionSnapshot",
+    "ProjectionSnapshotCorruptionError",
     "StoredEventCorruptionError",
     "UnregisteredEventTypeError",
+    "freeze_object",
+    "is_ulid",
 )
